@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Blood Sugar & Supplement Tracker</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#111a33;
+      --card2:#0f1830;
+      --text:#e8ecff;
+      --muted:#a8b0d6;
+      --accent:#6ee7ff;
+      --accent2:#a78bfa;
+      --danger:#ff6b6b;
+      --ok:#65ff9b;
+      --border:rgba(255,255,255,.12);
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background: radial-gradient(1200px 700px at 20% 0%, rgba(167,139,250,.25), transparent 55%),
+                  radial-gradient(900px 600px at 90% 10%, rgba(110,231,255,.18), transparent 55%),
+                  linear-gradient(180deg, #070a14, var(--bg));
+      color:var(--text);
+      min-height:100vh;
+    }
+    header{
+      padding:28px 18px 14px;
+      max-width:1100px;
+      margin:0 auto;
+    }
+    h1{
+      margin:0 0 6px;
+      letter-spacing:.2px;
+      font-size:28px;
+      line-height:1.15;
+    }
+    .sub{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.4;
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:0 18px 36px}
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:14px;
+      margin:14px 0;
+      overflow:hidden;
+    }
+
+    .topbar{
+      display:grid;
+      grid-template-columns: 1.2fr 1.2fr 1fr;
+      gap:12px;
+      align-items:end;
+    }
+
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    input[type="date"], input[type="number"], input[type="text"], textarea{
+      width:100%;
+      background:rgba(0,0,0,.22);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+      color:var(--text);
+      outline:none;
+    }
+    textarea{min-height:70px;resize:vertical}
+    input[type="date"]{font-family:var(--sans)}
+
+    .btnrow{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}
+    button{
+      appearance:none;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      transition:transform .05s ease, background .15s ease, border-color .15s ease;
+      font-weight:600;
+    }
+    button:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.18)}
+    button:active{transform:translateY(1px)}
+    .primary{border-color:rgba(110,231,255,.35);background:rgba(110,231,255,.12)}
+    .primary:hover{background:rgba(110,231,255,.16)}
+    .danger{border-color:rgba(255,107,107,.35);background:rgba(255,107,107,.12)}
+    .danger:hover{background:rgba(255,107,107,.16)}
+
+    .pills{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--border);padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.18)}
+
+    .status{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px dashed rgba(255,255,255,.14);
+    }
+    .status .left{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25)}
+    .dot.ok{background:rgba(101,255,155,.8)}
+    .dot.warn{background:rgba(255,217,102,.85)}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:12px;
+      margin-top:12px;
+    }
+
+    .day{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.16));
+      overflow:hidden;
+    }
+    .day summary{
+      list-style:none;
+      cursor:pointer;
+      padding:12px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:rgba(0,0,0,.18);
+    }
+    .day summary::-webkit-details-marker{display:none}
+    .day .date{
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .badge{
+      font-size:12px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:4px 8px;
+      color:var(--muted);
+      background:rgba(0,0,0,.14);
+    }
+    .badge.good{border-color:rgba(101,255,155,.25);color:#b9ffd6;background:rgba(101,255,155,.10)}
+
+    .day .content{padding:12px}
+
+    .section{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.10);
+      border-radius:12px;
+      padding:10px;
+      margin:10px 0;
+    }
+    .section h3{margin:0 0 8px;font-size:13px;color:var(--muted);letter-spacing:.2px;text-transform:uppercase}
+
+    .checks{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:8px;
+    }
+    .check{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      padding:8px 10px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      background:rgba(255,255,255,.03);
+    }
+    .check input{margin-top:3px;transform:scale(1.15)}
+    .check span{font-size:14px;line-height:1.2}
+
+    .fields{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:10px;
+    }
+    .field small{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+
+    .rightcol{
+      position:sticky;
+      top:12px;
+      height:fit-content;
+    }
+
+    .mini{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+
+    .kpi{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:12px;
+      padding:10px;
+      background:rgba(0,0,0,.12);
+    }
+    .kpi .n{font-size:22px;font-weight:900}
+    .kpi .t{font-size:12px;color:var(--muted)}
+
+    .hint{font-size:12px;color:var(--muted);line-height:1.45}
+
+    .footer{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    @media (max-width: 980px){
+      .topbar{grid-template-columns:1fr;align-items:stretch}
+      .btnrow{justify-content:flex-start}
+      .grid{grid-template-columns:1fr}
+      .rightcol{position:static}
+      .fields{grid-template-columns:1fr}
+      .checks{grid-template-columns:1fr}
+    }
+  </style>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#8ab4f8">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="BS Tracker">
+
+</head>
+<body>
+  <header>
+    <h1>Blood Sugar + Supplements/Exercise Tracker</h1>
+
+        <div class="mini">
+          <label class="label">Custom vitamin label</label>
+          <input id="customVitLabel" class="input" type="text" placeholder="e.g., Vitamin B12" />
+          <div class="hint">This adds an extra checkbox to the daily list.</div>
+        </div>
+    
+    <div class="sub">Choose a date range to generate daily checkboxes + spaces for values. Everything saves locally in your browser (no login, no cloud).</div>
+  </header>
+
+  <div class="wrap">
+    <div class="panel" id="controls">
+      <div class="topbar">
+        <div>
+          <label for="start">Start date</label>
+          <input id="start" type="date" />
+        </div>
+        <div>
+          <label for="end">End date</label>
+          <input id="end" type="date" />
+        </div>
+        <div>
+          <div class="btnrow">
+            <button class="primary" id="build">Build / Refresh</button>
+            <button id="quick7">7d</button>
+            <button id="quick14">14d</button>
+            <button id="quick30">30d</button>
+            <button id="quick90">90d</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="status">
+        <div class="left">
+          <span class="pill" id="rangePill">No range yet</span>
+          <span class="pill" id="savePill"><span class="dot" id="saveDot"></span> <span id="saveText">Not saved yet</span></span>
+        </div>
+        <div class="btnrow">
+          <button id="expandAll">Expand all</button>
+          <button id="collapseAll">Collapse all</button>
+          <button id="exportCsv">Export CSV</button>
+          <button id="exportJson">Export JSON</button>
+          <button id="importJson">Import JSON</button>
+          <button class="danger" id="clearAll">Clear range data</button>
+        </div>
+      </div>
+
+      <div class="footer">
+        Tips: (1) Use <b>Export JSON</b> as a backup file you can re-import later. (2) CSV is for spreadsheets.
+      </div>
+    </div>
+
+    <div class="grid">
+      <div id="days"></div>
+      <div class="rightcol">
+        <div class="panel">
+          <div class="mini">
+            <div class="kpi">
+              <div class="n" id="kpiDays">0</div>
+              <div class="t">Days in range</div>
+            </div>
+            <div class="kpi">
+              <div class="n" id="kpiComplete">0%</div>
+              <div class="t">Days with any entry</div>
+            </div>
+          </div>
+          <div style="height:10px"></div>
+          <div class="hint">
+            <b>What’s tracked per day</b>
+            <ul>
+              <li>Checkboxes: supplements + exercise + fasted status</li>
+              <li>Values: Fasting/Pre-dinner/2-hr post-dinner sugars</li>
+              <li>Body metrics: waist (mm), weight (kg), fat %, BP (sys/dia), grip strength (L/R)</li>
+              <li>Notes: anything you want</li>
+            </ul>
+            <b>Privacy</b>
+            <div>Data stays on this device via localStorage until you clear it.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // --- Config (labels exactly as provided, including typos) ---
+  const CHECK_GROUPS = [
+    {
+      title: "Supplements / Meds",
+      items: [
+        "Berberine – Morning",
+        "Vitamin D3",
+        "K2",
+        "NR",
+        "Astaxanathan",
+        "Metformin",
+        "Berberine – Afternoon",
+        "Vitamin  C",
+        "Multivitamin",
+        "Sugar Support",
+        "Omega 3",
+          "Ubiquinol",
+        "TMG",
+        "NAC",
+        "Magnesium",
+        "Taurine",
+        "Collagen",
+        "Protein Powder 84g",
+        "Cinnamon",
+        "Apple Cider Vinegar",
+        "Creatine 10g",
+        "Probiotic",
+      ]
+    },
+    {
+      title: "Exercise",
+      items: [
+        "Half hour treadmill",
+        "Foot Excercise",
+        "Shoulderr Excercise",
+        "Weight Training",
+      ]
+    },
+    {
+      title: "Fasting",
+      items: [
+        "Fasted",
+        "Water Fasted",
+      ]
+    }
+  ,
+    { title: 'Custom', items: [customVitBoolKey] }
+  ];
+
+  const VALUE_FIELDS = [
+    { key: "fastingBloodSugar", label: "Fasting Blood Sugar", type: "number", placeholder: "mmol/L" },
+    { key: "preDinnerSugar", label: "Pre Dinner Sugar", type: "number", placeholder: "mmol/L" },
+    { key: "postDinner2h", label: "2 Hr Post Dinner Sugar", type: "number", placeholder: "mmol/L" },
+
+    { key: "waist", label: "Waist size", type: "number", placeholder: "mm" },
+    { key: "weight", label: "Weight", type: "number", placeholder: "kg" },
+    { key: "fat", label: "Fat", type: "number", placeholder: "%" },
+
+    { key: "bpSys", label: "Blood Pressure (Systolic)", type: "number", placeholder: "mmHg" },
+    { key: "bpDia", label: "Blood Pressure (Diastolic)", type: "number", placeholder: "mmHg" },
+
+    { key: "gripLeft", label: "Grip Strength (Left)", type: "number", placeholder: "kg" },
+    { key: "gripRight", label: "Grip Strength (Right)", type: "number", placeholder: "kg" },
+  ];
+
+  // --- Helpers ---
+  const $ = (sel) => document.querySelector(sel);
+  const daysEl = $("#days");
+  const startEl = $("#start");
+  const endEl = $("#end");
+  const buildBtn = $("#build");
+  const rangePill = $("#rangePill");
+  const saveDot = $("#saveDot");
+  const saveText = $("#saveText");
+  const kpiDays = $("#kpiDays");
+  const kpiComplete = $("#kpiComplete");
+
+  const fmtDate = (d) => d.toISOString().slice(0,10);
+  const fmtDateAU = (iso) => {
+    const parts = String(iso).split('-');
+    if (parts.length !== 3) return iso;
+    const [y,m,d] = parts;
+    return `${d.padStart(2,'0')}/${m.padStart(2,'0')}/${y}`;
+  };
+  const parseDate = (s) => {
+    const [y,m,dd] = s.split("-").map(Number);
+    return new Date(Date.UTC(y, m-1, dd));
+  };
+  const addDays = (d, n) => new Date(d.getTime() + n*86400000);
+
+  const dateList = (startStr, endStr) => {
+    const start = parseDate(startStr);
+    const end = parseDate(endStr);
+    const out = [];
+    for (let d = start; d.getTime() <= end.getTime(); d = addDays(d, 1)) out.push(fmtDate(d));
+    return out;
+  };
+
+  const storageKeyForRange = (startStr, endStr) => `bst:v1:${startStr}:${endStr}`;
+
+  let currentKey = null;
+  let model = { meta: { start: null, end: null }, days: {} };
+  let saveTimer = null;
+
+  function setSaveIndicator(state) {
+    // state: 'idle' | 'saving' | 'saved'
+    if (state === 'saving') {
+      saveDot.className = 'dot warn';
+      saveText.textContent = 'Saving…';
+    } else if (state === 'saved') {
+      saveDot.className = 'dot ok';
+      saveText.textContent = 'Saved';
+    } else {
+      saveDot.className = 'dot';
+      saveText.textContent = 'Not saved yet';
+    }
+  }
+
+  function scheduleSave() {
+    setSaveIndicator('saving');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      if (!currentKey) return;
+      localStorage.setItem(currentKey, JSON.stringify(model));
+      setSaveIndicator('saved');
+      updateKPIs();
+    }, 250);
+  }
+
+  function ensureDay(dateStr) {
+    if (!model.days[dateStr]) {
+      model.days[dateStr] = { checks: {}, values: {}, notes: "", meals: { breakfast:'', lunch:'', dinner:'', snacks:'' }, carbsG: "" };
+    }
+    return model.days[dateStr];
+  }
+
+  function anyEntry(day) {
+    if (!day) return false;
+    const anyCheck = Object.values(day.checks || {}).some(Boolean);
+    const anyVal = Object.values(day.values || {}).some(v => String(v ?? '').trim() !== '');
+    const anyNotes = String(day.notes || '').trim() !== '';
+    return anyCheck || anyVal || anyNotes;
+  }
+
+  function updateKPIs() {
+    const dates = Object.keys(model.days || {});
+    const total = dates.length;
+    const filled = dates.filter(d => anyEntry(model.days[d])).length;
+    kpiDays.textContent = String(total);
+    kpiComplete.textContent = total ? `${Math.round((filled/total)*100)}%` : '0%';
+  }
+
+  // --- UI builders ---
+  function buildDayCard(dateStr) {
+    
+    const startStr = currentStartStr || (document.getElementById('start')?.value || dateStr);
+const day = ensureDay(dateStr);
+
+    const details = document.createElement('details');
+    details.className = 'day';
+
+    const summary = document.createElement('summary');
+
+    const left = document.createElement('div');
+    left.innerHTML = `<div class="date">${fmtDateAU(dateStr)}</div>`;
+
+    const badges = document.createElement('div');
+    badges.className = 'badges';
+
+    const badgeSugar = document.createElement('div');
+    badgeSugar.className = 'badge';
+    const fbs = day.values.fastingBloodSugar;
+    badgeSugar.textContent = fbs ? `FBS: ${fbs}` : 'FBS: —';
+
+    const badgeChecks = document.createElement('div');
+    badgeChecks.className = 'badge';
+    const countChecks = Object.values(day.checks || {}).filter(Boolean).length;
+    badgeChecks.textContent = countChecks ? `${countChecks} checked` : '0 checked';
+    if (countChecks) badgeChecks.classList.add('good');
+
+    badges.appendChild(badgeSugar);
+    badges.appendChild(badgeChecks);
+
+    summary.appendChild(left);
+    summary.appendChild(badges);
+
+    const content = document.createElement('div');
+    content.className = 'content';
+
+    // Values
+    const valuesSec = document.createElement('div');
+    valuesSec.className = 'section';
+    valuesSec.innerHTML = `<h3>Values</h3>`;
+
+    const fields = document.createElement('div');
+    fields.className = 'fields';
+
+    for (const f of VALUE_FIELDS) {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const inp = document.createElement('input');
+      inp.type = f.type;
+      inp.value = day.values[f.key] ?? '';
+      inp.placeholder = f.placeholder || '';
+      inp.inputMode = f.type === 'number' ? 'decimal' : 'text';
+      inp.addEventListener('input', () => {
+        day.values[f.key] = inp.value;
+        // Update badges live
+        if (f.key === 'fastingBloodSugar') {
+          badgeSugar.textContent = inp.value ? `FBS: ${inp.value}` : 'FBS: —';
+        }
+        scheduleSave();
+      });
+
+      const small = document.createElement('small');
+      small.textContent = f.label;
+      wrap.appendChild(small);
+      wrap.appendChild(inp);
+      fields.appendChild(wrap);
+    }
+
+    valuesSec.appendChild(fields);
+
+    // Checks
+    const checksWrap = document.createElement('div');
+    checksWrap.className = 'section';
+    checksWrap.innerHTML = `<h3>Checkboxes</h3>`;
+
+    for (const group of CHECK_GROUPS) {
+      const sec = document.createElement('div');
+      sec.className = 'section';
+      sec.innerHTML = `<h3>${group.title}</h3>`;
+
+      const grid = document.createElement('div');
+      grid.className = 'checks';
+
+      for (const label of group.items) {
+        const row = document.createElement('label');
+        row.className = 'check';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = Boolean(day.checks[label]);
+        cb.addEventListener('change', () => {
+          day.checks[label] = cb.checked;
+          const count = Object.values(day.checks || {}).filter(Boolean).length;
+          badgeChecks.textContent = count ? `${count} checked` : '0 checked';
+          badgeChecks.classList.toggle('good', count > 0);
+          scheduleSave();
+        });
+
+        const txt = document.createElement('span');
+        txt.textContent = label;
+
+        row.appendChild(cb);
+        row.appendChild(txt);
+        grid.appendChild(row);
+      }
+
+      sec.appendChild(grid);
+      checksWrap.appendChild(sec);
+    }
+    // Meals (daily log)
+    const mealsSec = document.createElement('div');
+    mealsSec.className = 'section';
+    mealsSec.innerHTML = `<h3>Meals</h3>`;
+
+    const mkMeal = (label, key, placeholder) => {
+      const wrap = document.createElement('div');
+      wrap.style.marginTop = '8px';
+
+      const lbl = document.createElement('div');
+      lbl.className = 'muted';
+      lbl.style.fontWeight = '600';
+      lbl.textContent = label;
+
+      const ta = document.createElement('textarea');
+      ta.className = 'mealArea';
+      ta.rows = 2;
+      ta.placeholder = placeholder;
+      ta.value = (day.meals && day.meals[key]) ? day.meals[key] : '';
+      ta.addEventListener('input', () => {
+        day.meals = day.meals || { breakfast:'', lunch:'', dinner:'', snacks:'' };
+        day.meals[key] = ta.value;
+        scheduleSave();
+      });
+
+      wrap.appendChild(lbl);
+      wrap.appendChild(ta);
+      return wrap;
+    };
+
+    mealsSec.appendChild(mkMeal('Breakfast', 'breakfast', 'Breakfast (what you ate)'));
+    mealsSec.appendChild(mkMeal('Lunch', 'lunch', 'Lunch (what you ate)'));
+    mealsSec.appendChild(mkMeal('Dinner', 'dinner', 'Dinner (what you ate)'));
+    mealsSec.appendChild(mkMeal('Snacks', 'snacks', 'Snacks (what you ate)'));
+
+    const carbsWrap = document.createElement('div');
+    carbsWrap.className = 'row';
+    carbsWrap.style.gap = '10px';
+    carbsWrap.style.flexWrap = 'wrap';
+    carbsWrap.style.marginTop = '10px';
+
+    const carbsLbl = document.createElement('div');
+    carbsLbl.className = 'muted';
+    carbsLbl.style.fontWeight = '600';
+    carbsLbl.textContent = 'Total carbs (optional, g)';
+
+    const carbsInp = document.createElement('input');
+    carbsInp.type = 'number';
+    carbsInp.step = '1';
+    carbsInp.min = '0';
+    carbsInp.placeholder = 'Carbs (g)';
+    carbsInp.style.width = '160px';
+    carbsInp.value = day.carbsG || '';
+    carbsInp.addEventListener('input', () => {
+      day.carbsG = carbsInp.value;
+      scheduleSave();
+    });
+
+    carbsWrap.appendChild(carbsLbl);
+    carbsWrap.appendChild(carbsInp);
+    mealsSec.appendChild(carbsWrap);
+
+
+
+    // Notes
+    const notesSec = document.createElement('div');
+    notesSec.className = 'section';
+    notesSec.innerHTML = `<h3>Notes</h3>`;
+    const ta = document.createElement('textarea');
+    ta.placeholder = 'Anything worth noting (sleep, stress, meals, etc.)';
+    ta.value = day.notes || '';
+    ta.addEventListener('input', () => {
+      day.notes = ta.value;
+      scheduleSave();
+    });
+    notesSec.appendChild(ta);
+
+    content.appendChild(valuesSec);
+    content.appendChild(checksWrap);
+    
+    content.appendChild(mealsSec);
+content.appendChild(notesSec);
+
+    details.appendChild(summary);
+    details.appendChild(content);
+
+    return details;
+  }
+
+  function renderRange(startStr, endStr) {
+    if (!startStr || !endStr) return;
+    if (endStr < startStr) [startStr, endStr] = [endStr, startStr];
+
+    const key = storageKeyForRange(startStr, endStr);
+    currentKey = key;
+
+    const existing = localStorage.getItem(key);
+    if (existing) {
+      try {
+        model = JSON.parse(existing);
+      } catch {
+        model = { meta: { start: startStr, end: endStr }, days: {} };
+      }
+    } else {
+      model = { meta: { start: startStr, end: endStr }, days: {} };
+    }
+
+    model.meta.start = startStr;
+    model.meta.end = endStr;
+
+    const dates = dateList(startStr, endStr);
+    // Ensure all days exist
+    for (const d of dates) ensureDay(d);
+
+    // Remove days not in range (in case range shrank)
+    for (const d of Object.keys(model.days)) {
+      if (!dates.includes(d)) delete model.days[d];
+    }
+
+    daysEl.innerHTML = '';
+    for (const d of dates) {
+      daysEl.appendChild(buildDayCard(d));
+    }
+
+    rangePill.textContent = `${fmtDateAU(startStr)} → ${fmtDateAU(endStr)}`;
+    updateKPIs();
+    setSaveIndicator(existing ? 'saved' : 'idle');
+    scheduleSave();
+  }
+
+  // --- Export / Import ---
+  function download(filename, text, mime) {
+    const blob = new Blob([text], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportJSON() {
+    if (!currentKey) return alert('Pick a date range first.');
+    const safe = JSON.stringify(model, null, 2);
+    download(`blood_sugar_tracker_${model.meta.start}_to_${model.meta.end}.json`, safe, 'application/json');
+  }
+
+  function exportCSV() {
+    if (!currentKey) return alert('Pick a date range first.');
+
+    // Columns: Date + value fields + every checkbox label
+    const allChecks = CHECK_GROUPS.flatMap(g => g.items);
+
+    const headers = [
+      'Date',
+      ...VALUE_FIELDS.map(f => f.label),
+      ...allChecks,
+      'Notes'
+    ];
+
+    const escape = (v) => {
+      const s = String(v ?? '');
+      if (s.includes('"') || s.includes(',') || s.includes('\n')) {
+        return '"' + s.replaceAll('"', '""') + '"';
+      }
+      return s;
+    };
+
+    const dates = Object.keys(model.days).sort();
+    const rows = [headers.map(escape).join(',')];
+
+    for (const d of dates) {
+      const day = model.days[d];
+      const vals = VALUE_FIELDS.map(f => day.values?.[f.key] ?? '');
+      const checks = allChecks.map(label => day.checks?.[label] ? 'TRUE' : 'FALSE');
+      const notes = day.notes ?? '';
+      rows.push([fmtDateAU(d), ...vals, ...checks, notes].map(escape).join(','));
+    }
+
+    download(`blood_sugar_tracker_${model.meta.start}_to_${model.meta.end}.csv`, rows.join('\n'), 'text/csv');
+  }
+
+  async function importJSON() {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'application/json';
+    inp.click();
+
+    inp.onchange = async () => {
+      const file = inp.files && inp.files[0];
+      if (!file) return;
+      const text = await file.text();
+      let imported;
+      try {
+        imported = JSON.parse(text);
+      } catch {
+        return alert('That file does not look like valid JSON.');
+      }
+      if (!imported?.meta?.start || !imported?.meta?.end || !imported?.days) {
+        return alert('JSON file format not recognized.');
+      }
+
+      startEl.value = imported.meta.start;
+      endEl.value = imported.meta.end;
+      currentKey = storageKeyForRange(imported.meta.start, imported.meta.end);
+      model = imported;
+      localStorage.setItem(currentKey, JSON.stringify(model));
+      renderRange(imported.meta.start, imported.meta.end);
+      setSaveIndicator('saved');
+      alert('Imported!');
+    };
+  }
+
+  function clearRangeData() {
+    if (!currentKey) return alert('Pick a date range first.');
+    if (!confirm('Clear all saved data for this date range?')) return;
+    localStorage.removeItem(currentKey);
+    model = { meta: { start: startEl.value, end: endEl.value }, days: {} };
+    renderRange(startEl.value, endEl.value);
+    setSaveIndicator('idle');
+  }
+
+  // --- Range shortcuts ---
+  function setQuick(days) {
+    const end = new Date();
+    const start = new Date(end.getTime() - (days-1)*86400000);
+    const s = fmtDate(new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())));
+    const e = fmtDate(new Date(Date.UTC(end.getFullYear(), end.getMonth(), end.getDate())));
+    startEl.value = s;
+    endEl.value = e;
+    renderRange(s, e);
+  }
+
+  // --- Controls ---
+  buildBtn.addEventListener('click', () => renderRange(startEl.value, endEl.value));
+  $('#quick7').addEventListener('click', () => setQuick(7));
+  $('#quick14').addEventListener('click', () => setQuick(14));
+  $('#quick30').addEventListener('click', () => setQuick(30));
+  $('#quick90').addEventListener('click', () => setQuick(90));
+
+  $('#expandAll').addEventListener('click', () => {
+    document.querySelectorAll('.day').forEach(d => d.open = true);
+  });
+  $('#collapseAll').addEventListener('click', () => {
+    document.querySelectorAll('.day').forEach(d => d.open = false);
+  });
+
+  $('#exportCsv').addEventListener('click', exportCSV);
+  $('#exportJson').addEventListener('click', exportJSON);
+  $('#importJson').addEventListener('click', importJSON);
+  $('#clearAll').addEventListener('click', clearRangeData);
+
+  // --- Initialize with last used range if present ---
+  const last = localStorage.getItem('bst:lastRange');
+  if (last) {
+    try {
+      const { start, end } = JSON.parse(last);
+      if (start && end) {
+        startEl.value = start;
+        endEl.value = end;
+        renderRange(start, end);
+      }
+    } catch {}
+  } else {
+    // Default to last 14 days
+    setQuick(14);
+  }
+
+  // Persist last range choice
+  const persistLastRange = () => {
+    if (startEl.value && endEl.value) {
+      localStorage.setItem('bst:lastRange', JSON.stringify({ start: startEl.value, end: endEl.value }));
+    }
+  };
+  startEl.addEventListener('change', persistLastRange);
+  endEl.addEventListener('change', persistLastRange);
+
+})();
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js').catch(console.warn);
+    });
+  }
+</script>
+
+</body>
+</html>
